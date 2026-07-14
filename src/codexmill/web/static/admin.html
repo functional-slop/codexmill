@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CodexMill — Settings</title>
+<link rel="stylesheet" href="/app.css" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#16130e" media="(prefers-color-scheme: dark)" />
+<link rel="apple-touch-icon" href="/icon-180.png" />
+<link rel="icon" href="/icon-192.png" type="image/png" />
+<script>try{var t=localStorage.getItem("cm-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+</head>
+<body>
+<div class="glow"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" title="Back to generating story bibles">
+      <span class="mark"><i></i><i></i><i></i></span>
+      <span class="name">Codex<em>Mill</em></span>
+    </a>
+    <nav class="navlinks">
+      <a href="/" title="Generate a new story bible">New Bible</a>
+      <a href="/#library" title="Your saved bibles and series">Library</a>
+      <a href="/admin" class="active" title="Settings">Settings</a>
+      <button class="theme-btn" id="theme-toggle" aria-label="Toggle light / dark theme" title="Toggle light / dark">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+<div class="wrap-mid">
+  <h2 style="font-family:var(--serif);font-size:32px;font-weight:400;margin:0 0 6px">Settings</h2>
+  <p class="sub" style="margin:0 0 28px">Configure once. Everything stays on this server — the browser never talks to anyone else.</p>
+
+  <div class="settings">
+    <nav class="tabs">
+      <a data-tab="engine" class="active" title="Choose which AI generates your stories">AI Engine</a>
+      <a data-tab="access" title="Optional sign-in for a shared/hosted instance">Access &amp; Login</a>
+      <a data-tab="about" title="About CodexMill">About</a>
+    </nav>
+
+    <div class="content">
+
+      <!-- AI ENGINE -->
+      <section id="tab-engine">
+        <div class="panel">
+          <h2>AI Engine</h2> <span class="msg" id="llm_status" style="margin-left:10px"></span>
+          <p class="sub" style="margin:8px 0 20px">CodexMill talks to any OpenAI-compatible endpoint. Pick a provider and it fills in the rest. Keys are encrypted at rest.</p>
+
+          <label for="provider">Provider <span class="info" title="Choose which AI service runs your generations. Picking one fills in its connection details below; enter a key if it needs one, then choose a model.">ⓘ</span></label>
+          <select id="provider" title="Choose a provider; the connection details fill in automatically">
+            <option value="ollama">Local Ollama — runs on your own machine, no key</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="openai">OpenAI</option>
+            <option value="groq">Groq — very fast (hosts Llama/Qwen/etc.)</option>
+            <option value="openrouter">OpenRouter — many models</option>
+            <option value="anthropic">Anthropic Claude</option>
+            <option value="custom">Custom — any OpenAI-compatible endpoint</option>
+          </select>
+
+          <div class="row" style="margin-top:6px">
+            <div>
+              <label for="llm_base_url">Base URL <span class="info" title="Auto-filled by the provider. Only change it for a custom/self-hosted endpoint.">ⓘ</span></label>
+              <input id="llm_base_url" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" title="OpenAI-compatible API base URL" placeholder="https://…/v1" />
+            </div>
+            <div>
+              <label for="llm_model">Model <span class="info" title="Pick from the connected engine's installed models, or type one. Populates when the endpoint is reachable.">ⓘ</span></label>
+              <select id="llm_model_pick" title="Choose from the engine's installed models" style="display:none;margin-bottom:6px"></select>
+              <input id="llm_model" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" title="Choose from the engine's models or type your own" placeholder="select or type a model" />
+              <div class="help" id="llm_model_hint" style="margin-top:4px"></div>
+            </div>
+          </div>
+
+          <div id="keyrow" style="display:none">
+            <label for="llm_api_key">API key
+              <span class="info" title="Your secret key. Stored encrypted at rest; leave blank to keep the saved one.">ⓘ</span>
+              <a id="getkey" style="font-weight:400;display:none;text-transform:none;letter-spacing:0" target="_blank" rel="noopener" title="Open the provider's key page">Get a key ↗</a>
+            </label>
+            <input id="llm_api_key" type="password" autocomplete="new-password" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="••••••••" title="Paste your provider API key (stored encrypted)" />
+          </div>
+
+          <details title="Optional: use a different model for individual stages">
+            <summary>Per-stage models (advanced)</summary>
+            <p class="help" style="margin-top:10px">Put a cheap/local model on the bulk chapters and a strong one on structure. Blank = use the model above.</p>
+            <div class="row" autocomplete="off">
+              <input id="sm_premise" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="premise" title="Model just for the premise stage" style="flex:1 1 130px" />
+              <input id="sm_worldbuilding" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="worldbuilding" title="Model just for the worldbuilding stage" style="flex:1 1 130px" />
+              <input id="sm_characters" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="characters" title="Model just for the characters stage" style="flex:1 1 130px" />
+              <input id="sm_structure" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="structure" title="Model just for the structure stage" style="flex:1 1 130px" />
+              <input id="sm_chapters" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="chapters" title="Model just for the chapter breakdowns (the bulk)" style="flex:1 1 130px" />
+              <input id="sm_kdp" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" spellcheck="false" placeholder="KDP metadata" title="Model just for the KDP metadata stage" style="flex:1 1 130px" />
+            </div>
+          </details>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:22px">
+            <button class="btn" id="llm_save" title="Save this engine as your default">Save engine</button>
+            <button class="btn secondary" id="llm_test" title="Check the connection and list available models">Test connection</button>
+            <button class="btn secondary" id="llm_clear" title="Remove the saved engine">Clear</button>
+          </div>
+          <div class="msg" id="llm_msg"></div>
+          <a class="btn" id="onboarding-done" href="/" style="display:none;margin-top:20px">All set — start writing →</a>
+        </div>
+
+        <div class="panel" id="rl-panel" style="margin-top:16px">
+          <h2>Usage limit <span class="info" title="Caps how many story bibles each person can generate in a time window, so a shared instance can't run your paid API key dry. Leave at 0 for a personal copy.">ⓘ</span></h2> <span class="msg" id="rl_status" style="margin-left:10px"></span>
+          <p class="sub" style="margin:8px 0 20px">Optional, off by default. Only useful on a shared instance where other people generate against <b>your</b> API key above. Set a per-person cap; leave <b>0</b> for unlimited (a personal self-hosted copy).</p>
+          <div class="row">
+            <div>
+              <label for="rl_max">Max generations <span class="info" title="How many generations one person may run per window. 0 = unlimited.">ⓘ</span></label>
+              <input id="rl_max" type="number" min="0" step="1" value="0" title="Generations allowed per window per person (0 = unlimited)" />
+            </div>
+            <div>
+              <label for="rl_window">Per how many hours</label>
+              <input id="rl_window" type="number" min="1" step="1" value="24" title="Length of the rolling window in hours" />
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
+            <button class="btn" id="rl_save" title="Save the usage limit">Save limit</button>
+            <button class="btn secondary" id="rl_clear" title="Remove the limit (unlimited)">Remove limit</button>
+          </div>
+          <div class="msg" id="rl_msg"></div>
+        </div>
+      </section>
+
+      <!-- ACCESS & LOGIN -->
+      <section id="tab-access" hidden>
+        <div class="panel">
+          <h2>Access &amp; Login</h2> <span class="msg" id="oidc_status" style="margin-left:10px"></span>
+          <p class="sub" style="margin:8px 0 20px">Optional. Leave off for local self-hosting. Turn on OIDC to require sign-in on a shared instance — works with Authentik, Google, Auth0, any provider with a discovery URL.</p>
+
+          <label for="issuer">Issuer URL <span class="info" title="The OIDC provider base, e.g. https://auth.example.com/application/o/codexmill/">ⓘ</span></label>
+          <input id="issuer" title="OIDC issuer / discovery base URL" placeholder="https://auth.example.com/application/o/codexmill/" />
+          <div class="row">
+            <div>
+              <label for="client_id">Client ID</label>
+              <input id="client_id" title="OAuth2 client ID" />
+            </div>
+            <div>
+              <label for="client_secret">Client secret <span class="info" title="Stored encrypted at rest. Leave blank to keep the saved one.">ⓘ</span></label>
+              <input id="client_secret" type="password" placeholder="••••••••" title="OAuth2 client secret (stored encrypted)" />
+            </div>
+          </div>
+          <label for="admin_emails">Admin emails <span class="info" title="Comma-separated. These accounts can open Settings after login is enabled.">ⓘ</span></label>
+          <input id="admin_emails" title="Comma-separated admin email allowlist" placeholder="you@example.com" />
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
+            <button class="btn" id="oidc_save" title="Save and enable OIDC login">Save &amp; enable</button>
+            <button class="btn secondary" id="oidc_test" title="Fetch the provider's discovery document to verify the issuer">Test connection</button>
+            <button class="btn secondary" id="oidc_disable" title="Turn OIDC login off">Disable login</button>
+          </div>
+          <div class="msg" id="oidc_msg"></div>
+        </div>
+        <details class="panel" style="margin-top:16px">
+          <summary>Break-glass setup token (advanced)</summary>
+          <p class="help" style="margin-top:12px">A recovery hatch, in case you're ever locked out of Settings (e.g. you lose the admin password, or an SSO allowlist no longer matches anyone). You set a value in the <code>CODEXMILL_SETUP_TOKEN</code> environment variable when you deploy; paste that same value below to unlock Settings for this session. It is never stored in the app and never put in a URL (that would leak it into server logs and browser history) — it only lives in that env var.</p>
+          <input id="setup_token" placeholder="paste your token here to unlock Settings" title="Matches the CODEXMILL_SETUP_TOKEN env var; unlocks Settings when a login-protected instance has locked you out" />
+        </details>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="tab-about" hidden>
+        <div class="panel">
+          <h2>About</h2>
+          <p style="font-family:var(--serif);font-size:16px;line-height:1.7;margin:14px 0 16px">CodexMill is a free, open-source, self-hosted story-bible generator. It gives away what paid services charge for — the same templated LLM pipeline, in the open and running on your own machine, so nobody has to pay for it.</p>
+          <div class="row">
+            <div style="padding:16px;border:1px solid var(--line);border-radius:11px;background:var(--field)"><div class="badge" style="border:0;padding:0;color:var(--muted2)">License</div><div style="font-family:var(--serif);font-size:17px;margin-top:6px">AGPL-3.0</div></div>
+            <div style="padding:16px;border:1px solid var(--line);border-radius:11px;background:var(--field)"><div class="badge" style="border:0;padding:0;color:var(--muted2)">Data</div><div style="font-family:var(--serif);font-size:17px;margin-top:6px">Stays on your server</div></div>
+          </div>
+          <p class="help" style="margin-top:18px">Configure your AI engine under the <b>AI Engine</b> tab, then head back to the app to generate.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+  <p class="foot">CodexMill · free &amp; open source, licensed <a href="https://www.gnu.org/licenses/agpl-3.0.html" title="GNU Affero General Public License v3.0">AGPL-3.0</a></p>
+</div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  /* ---- theme ---- */
+  function setTheme(t){ document.documentElement.dataset.theme = t; try{ localStorage.setItem("cm-theme", t); }catch(e){} $("theme-toggle").textContent = t === "dark" ? "☀" : "☾"; }
+  (function(){ const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light"); $("theme-toggle").textContent = cur === "dark" ? "☀" : "☾"; })();
+  $("theme-toggle").addEventListener("click", () => setTheme((document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light")) === "dark" ? "light" : "dark"));
+
+  /* ---- tabs ---- */
+  function showTab(name){
+    document.querySelectorAll(".tabs a").forEach(a => a.classList.toggle("active", a.dataset.tab === name));
+    document.querySelectorAll(".content section").forEach(s => s.hidden = (s.id !== "tab-" + name));
+    history.replaceState(null, "", "#" + name);
+  }
+  document.querySelectorAll(".tabs a").forEach(a => a.addEventListener("click", () => showTab(a.dataset.tab)));
+  showTab((location.hash || "#engine").slice(1));
+
+  // Onboarding mode (?onboarding=1): a focused first-run setup — only the engine + an "All set" exit.
+  const onboarding = new URLSearchParams(location.search).get("onboarding") === "1";
+  if (onboarding){
+    document.querySelector('.tabs [data-tab="access"]').style.display = "none";
+    document.querySelector('.tabs [data-tab="about"]').style.display = "none";
+    document.querySelectorAll(".navlinks a").forEach(a => a.style.display = "none");  // no wandering; the button is the way out
+    document.querySelector(".wrap-mid h2").textContent = "Connect your AI engine";
+    document.querySelector(".wrap-mid .sub").textContent = "The one step to get started — pick a provider and Save. You can change it any time.";
+    $("llm_clear").style.display = "none";
+    const rp = $("rl-panel"); if (rp) rp.style.display = "none";  // first-run is just the engine
+    showTab("engine");
+  }
+
+  /* ---- shared: setup-token header for admin API calls ---- */
+  function headers(){ const h = {"Content-Type":"application/json"}; const t = $("setup_token").value.trim(); if (t) h["X-Setup-Token"] = t; return h; }
+
+  /* ---- AI Engine (provider table + logic unchanged from original) ---- */
+  const PROVIDERS = {
+    ollama:     {backend:"openai", base_url:"http://localhost:11434/v1",                               model:"",                        key:false, url:""},
+    gemini:     {backend:"openai", base_url:"https://generativelanguage.googleapis.com/v1beta/openai", model:"gemini-2.5-flash",        key:true,  url:"https://aistudio.google.com/apikey"},
+    openai:     {backend:"openai", base_url:"https://api.openai.com/v1",                               model:"gpt-4o-mini",             key:true,  url:"https://platform.openai.com/api-keys"},
+    groq:       {backend:"openai", base_url:"https://api.groq.com/openai/v1",                          model:"llama-3.3-70b-versatile", key:true,  url:"https://console.groq.com/keys"},
+    openrouter: {backend:"openai", base_url:"https://openrouter.ai/api/v1",                            model:"",                        key:true,  url:"https://openrouter.ai/keys"},
+    anthropic:  {backend:"openai", base_url:"https://api.anthropic.com/v1",                            model:"claude-3-5-haiku-latest", key:true,  url:"https://console.anthropic.com/settings/keys"},
+    custom:     {backend:"openai", base_url:"",                                                        model:"",                        key:true,  url:""},
+  };
+  function applyProvider(fill){
+    const p = PROVIDERS[$("provider").value] || PROVIDERS.custom;
+    if (fill){ $("llm_base_url").value = p.base_url; $("llm_model").value = p.model; }
+    $("keyrow").style.display = p.key ? "block" : "none";
+    const gk = $("getkey"); if (p.url){ gk.href = p.url; gk.style.display = "inline"; } else gk.style.display = "none";
+  }
+  // Per-provider in-memory field memory: switching providers must not wipe what you typed for the
+  // previous one. Snapshot the leaving provider's fields, restore the arriving one's if we have them.
+  const drafts = {};
+  let currentProvider = $("provider").value;
+  function snapshotDraft(p){ drafts[p] = { base_url:$("llm_base_url").value, model:$("llm_model").value, api_key:$("llm_api_key").value }; }
+  function restoreDraft(p){ const d=drafts[p]; if(!d) return false; $("llm_base_url").value=d.base_url; $("llm_model").value=d.model; $("llm_api_key").value=d.api_key; return true; }
+  $("provider").addEventListener("change", () => {
+    snapshotDraft(currentProvider);
+    const p = $("provider").value;
+    // Restore prior edits for this provider if we have them; otherwise seed provider defaults AND
+    // clear the key field — never carry the previous provider's typed key into a fresh provider
+    // (it would get sent to the new provider's endpoint on test/save).
+    if (restoreDraft(p)) applyProvider(false); else { applyProvider(true); $("llm_api_key").value = ""; }
+    currentProvider = p;
+    loadModels();
+  });
+
+  // Model picker: a REAL <select> of the engine's models (a <datalist> silently filters its options
+  // by the input's current text, which is why a pre-filled model hid the rest). The text input stays
+  // for typing a custom/unlisted model. Selecting from the list fills the input.
+  function modelHint(t, err){ const h=$("llm_model_hint"); h.textContent=t||""; h.style.color = err ? "#c0392b" : ""; }
+  // Providers' /models lists include endpoints that CANNOT draft prose — image gen (Gemini's
+  // "nano banana" = gemini-*-image, Imagen, DALL·E, SDXL/FLUX), audio (Whisper/TTS/speech), video
+  // (Veo/Sora), embeddings, rerankers, moderation/guard. Deny-list (not allow-list) so any brand-new
+  // *text* model still shows; we only hide categories that provably can't write a story. The text
+  // field always accepts a typed model, so this only tidies the suggestion list — it never blocks one.
+  const NON_TEXT_MODEL = /(^|[-_/. ])(embed|tts|whisper|audio|speech|voice|transcrib|rerank|moderation|guard|image|imagen|dall[-_]?e|nano[-_ ]?banana|stable[-_]?diffusion|sdxl|flux|veo|sora|video|voxtral)[a-z]*([-_/. ]|\d|$)/i;
+  function isDraftableModel(id){ return !NON_TEXT_MODEL.test(String(id)); }
+  function fillModels(models){
+    const sel=$("llm_model_pick"), cur=$("llm_model").value.trim();
+    const all=(models||[]).filter(Boolean);
+    const list=all.filter(isDraftableModel);
+    const hidden=all.length-list.length;
+    sel.innerHTML="";
+    if(!list.length){
+      sel.style.display="none";
+      if(all.length) modelHint("This engine listed only non-text models (image/audio/embedding) — type your model name.");
+      return;
+    }
+    const ph=document.createElement("option"); ph.value=""; ph.textContent="— choose a model —"; sel.appendChild(ph);
+    list.forEach(m=>{ const o=document.createElement("option"); o.value=m; o.textContent=m; sel.appendChild(o); });
+    const other=document.createElement("option"); other.value="__custom__"; other.textContent="Other / type manually…"; sel.appendChild(other);
+    // If the current value was filtered out (a non-text model typed/saved earlier), keep it selectable.
+    if(cur && !list.includes(cur)){ const o=document.createElement("option"); o.value=cur; o.textContent=cur+" (current)"; sel.insertBefore(o, other); }
+    sel.value = cur || "";
+    sel.style.display="block";
+    modelHint(`${list.length} model${list.length===1?"":"s"} available${hidden?` · ${hidden} image/audio/embedding hidden`:""} — pick one or type your own.`);
+  }
+  $("llm_model_pick").addEventListener("change", () => {
+    const v=$("llm_model_pick").value;
+    if(v && v!=="__custom__") $("llm_model").value=v;
+    else if(v==="__custom__") $("llm_model").focus();
+  });
+  let modelsBusy=false;
+  async function loadModels(){
+    if (modelsBusy || !$("llm_base_url").value.trim()) return; modelsBusy=true;
+    try{
+      const r=await fetch("/api/admin/llm/test",{method:"POST",headers:headers(),body:JSON.stringify(llmBody())});
+      const d=await r.json();
+      if(d.ok){
+        fillModels(d.models);
+        if(!(d.models||[]).length) modelHint("Connected, but this engine listed no models — type the model name.");
+      } else {
+        $("llm_model_pick").style.display="none";
+        modelHint("Couldn't list models: " + (d.error || "connection failed") + " — you can still type a model name.", true);
+      }
+    }
+    catch(e){ $("llm_model_pick").style.display="none"; modelHint("Couldn't reach the engine to list models — type the model name.", true); }
+    finally{ modelsBusy=false; }
+  }
+  $("llm_base_url").addEventListener("change", loadModels);
+  $("llm_api_key").addEventListener("change", loadModels);
+  function providerFromStored(d){ for (const [k,p] of Object.entries(PROVIDERS)){ if (p.base_url && p.base_url === d.base_url) return k; } return d.base_url ? "custom" : "ollama"; }
+  function llmMsg(t,e){ const m=$("llm_msg"); m.textContent=t; m.className="msg"+(e?" err":""); }
+  function llmBody(){
+    const stage_models={}, map={sm_premise:"premise",sm_worldbuilding:"worldbuilding",sm_characters:"characters",sm_structure:"structure",sm_chapters:"chapters",sm_kdp:"KDP metadata"};
+    for (const [id,label] of Object.entries(map)){ const v=$(id).value.trim(); if (v) stage_models[label]=v; }
+    return { backend: PROVIDERS[$("provider").value].backend, base_url:$("llm_base_url").value.trim(), model:$("llm_model").value.trim(), api_key:$("llm_api_key").value, stage_models };
+  }
+  async function loadLLM(){
+    try{
+      const r = await fetch("/api/admin/llm", {headers: headers()});
+      if (!r.ok){ $("llm_status").innerHTML = '<span class="badge">admin access required</span>'; return; }
+      const d = await r.json();
+      $("provider").value = providerFromStored(d); currentProvider = $("provider").value; applyProvider(false);
+      $("llm_base_url").value = d.base_url || PROVIDERS[$("provider").value].base_url;
+      $("llm_model").value = d.model || PROVIDERS[$("provider").value].model;
+      const sm = d.stage_models || {};
+      $("sm_premise").value=sm["premise"]||""; $("sm_worldbuilding").value=sm["worldbuilding"]||""; $("sm_characters").value=sm["characters"]||"";
+      $("sm_structure").value=sm["structure"]||""; $("sm_chapters").value=sm["chapters"]||""; $("sm_kdp").value=sm["KDP metadata"]||"";
+      $("llm_status").innerHTML = d.configured ? `<span class="badge ok">Connected</span>${d.has_key ? ' · key saved' : ''}` : '<span class="badge">Not configured</span>';
+      loadModels();  // fill the model dropdown from the stored engine
+    }catch(e){}
+  }
+  $("llm_test").onclick = async () => { llmMsg("Testing…");
+    const r = await fetch("/api/admin/llm/test", {method:"POST", headers:headers(), body:JSON.stringify(llmBody())});
+    const d = await r.json();
+    if (d.ok){ fillModels(d.models); const n=(d.models||[]).length; llmMsg(n ? `Connected · ${n} models available (choose one in the Model field)` : "Connected."); }
+    else llmMsg("Failed: " + d.error, true);
+  };
+  $("llm_save").onclick = async () => { llmMsg("Saving…");
+    const r = await fetch("/api/admin/llm", {method:"PUT", headers:headers(), body:JSON.stringify(llmBody())});
+    if (r.ok){ llmMsg("Saved."); $("llm_api_key").value = ""; loadLLM(); if (onboarding) $("onboarding-done").style.display = "inline-block"; }
+    else llmMsg("Save failed: HTTP " + r.status, true);
+  };
+  $("llm_clear").onclick = async () => { if (!confirm("Clear the saved engine?")) return;
+    const r = await fetch("/api/admin/llm", {method:"PUT", headers:headers(), body:JSON.stringify({backend:"",base_url:"",model:"",api_key:"",stage_models:{}})});
+    r.ok ? (llmMsg("Cleared."), loadLLM()) : llmMsg("Failed", true);
+  };
+
+  /* ---- Access & Login (OIDC) — logic unchanged ---- */
+  function oidcMsg(t,e){ const m=$("oidc_msg"); m.textContent=t; m.className="msg"+(e?" err":""); }
+  function oidcBody(){ return { issuer:$("issuer").value.trim(), client_id:$("client_id").value.trim(), client_secret:$("client_secret").value, admin_emails:$("admin_emails").value.split(",").map(s=>s.trim()).filter(Boolean) }; }
+  async function loadOIDC(){
+    try{
+      const r = await fetch("/api/admin/oidc", {headers: headers()});
+      if (!r.ok){ $("oidc_status").innerHTML = '<span class="badge">admin access required</span>'; return; }
+      const d = await r.json();
+      $("oidc_status").innerHTML = `<span class="badge ${d.enabled ? 'ok' : ''}">${d.enabled ? "Login on" : "Login off"}</span> · source: ${d.source}`;
+      $("issuer").value=d.issuer||""; $("client_id").value=d.client_id||""; $("admin_emails").value=(d.admin_emails||[]).join(", ");
+    }catch(e){ $("oidc_status").textContent = "Failed to load."; }
+  }
+  $("oidc_test").onclick = async () => { oidcMsg("Testing…");
+    const r = await fetch("/api/admin/oidc/test", {method:"POST", headers:headers(), body:JSON.stringify({issuer:$("issuer").value.trim()})});
+    const d = await r.json(); d.ok ? oidcMsg("OK — authorize endpoint: " + d.authorization_endpoint) : oidcMsg("Discovery failed: " + d.error, true);
+  };
+  $("oidc_save").onclick = async () => { oidcMsg("Saving…");
+    const r = await fetch("/api/admin/oidc", {method:"PUT", headers:headers(), body:JSON.stringify(oidcBody())});
+    r.ok ? (oidcMsg("Saved."), $("client_secret").value="", loadOIDC()) : oidcMsg("Save failed: HTTP " + r.status, true);
+  };
+  $("oidc_disable").onclick = async () => { if (!confirm("Turn login off?")) return;
+    const r = await fetch("/api/admin/oidc", {method:"PUT", headers:headers(), body:JSON.stringify({issuer:"",client_id:"",client_secret:"",admin_emails:[]})});
+    r.ok ? (oidcMsg("Login disabled."), loadOIDC()) : oidcMsg("Failed", true);
+  };
+
+  /* ---- Usage limit (per-user quota, ADR 0022) ---- */
+  function rlMsg(t,e){ const m=$("rl_msg"); m.textContent=t; m.className="msg"+(e?" err":""); }
+  async function loadRateLimit(){
+    try{
+      const r = await fetch("/api/admin/rate-limit", {headers: headers()});
+      if (!r.ok){ $("rl_status").innerHTML = '<span class="badge">admin access required</span>'; return; }
+      const d = await r.json();
+      $("rl_status").innerHTML = `<span class="badge ${d.enabled ? 'ok' : ''}">${d.enabled ? d.max_generations + " / " + d.window_hours + "h" : "Unlimited"}</span> · source: ${d.source}`;
+      $("rl_max").value = d.max_generations || 0; $("rl_window").value = d.window_hours || 24;
+    }catch(e){ $("rl_status").textContent = "Failed to load."; }
+  }
+  $("rl_save").onclick = async () => { rlMsg("Saving…");
+    const body = { max_generations: parseInt($("rl_max").value || "0", 10), window_hours: parseFloat($("rl_window").value || "24") };
+    const r = await fetch("/api/admin/rate-limit", {method:"PUT", headers:headers(), body:JSON.stringify(body)});
+    r.ok ? (rlMsg(body.max_generations > 0 ? "Saved." : "Limit removed (unlimited)."), loadRateLimit()) : rlMsg("Save failed: HTTP " + r.status, true);
+  };
+  $("rl_clear").onclick = async () => {
+    const r = await fetch("/api/admin/rate-limit", {method:"PUT", headers:headers(), body:JSON.stringify({max_generations:0,window_hours:24})});
+    r.ok ? (rlMsg("Limit removed (unlimited)."), loadRateLimit()) : rlMsg("Failed", true);
+  };
+
+  /* The break-glass token is never put in a URL (it would land in logs + history) — paste it below. */
+  // real tooltips: move native title= into data-tip (styled CSS bubble; instant + reliable)
+  document.querySelectorAll('.info[title]').forEach(el => { el.dataset.tip = el.getAttribute('title'); el.removeAttribute('title'); });
+  // Pull the container-aware Ollama URL (host.docker.internal in Docker) before wiring the form.
+  (async () => {
+    try {
+      const me = await (await fetch("/api/me")).json();
+      // Settings is admin-only: bounce to the app, which shows account setup / sign-in.
+      if (me.needs_setup || !me.authenticated){ window.location = "/"; return; }
+      if (me.ollama_url) PROVIDERS.ollama.base_url = me.ollama_url;
+    } catch (e) {}
+    applyProvider(false); loadLLM(); loadOIDC(); loadRateLimit();
+  })();
+</script>
+</body>
+</html>

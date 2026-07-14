@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CodexMill — free story-bible generator</title>
+<link rel="stylesheet" href="/app.css" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#16130e" media="(prefers-color-scheme: dark)" />
+<link rel="apple-touch-icon" href="/icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="CodexMill" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="icon" href="/icon-192.png" type="image/png" />
+<script>/* set theme before paint to avoid a flash */try{var t=localStorage.getItem("cm-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}</script>
+</head>
+<body>
+<div class="glow"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" title="CodexMill home">
+      <span class="mark"><i></i><i></i><i></i></span>
+      <span class="name">Codex<em>Mill</em></span>
+    </a>
+    <nav class="navlinks">
+      <a href="/" class="active" title="Generate a new story bible">New Bible</a>
+      <a id="nav-library" title="Your saved bibles and series">Library</a>
+      <a href="/admin" title="AI engine, keys, and login settings">Settings</a>
+      <button class="theme-btn" id="theme-toggle" aria-label="Toggle light / dark theme" title="Toggle light / dark">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ============ GENERATE FORM ============ -->
+  <div class="wrap" id="view-form">
+    <div class="masthead">
+      <div class="kicker">Story Bible Generator</div>
+      <h1>Codex<em>Mill</em></h1>
+      <hr class="rule" />
+      <p class="sub">Turn a single line into a complete story bible — a free, self-hosted tool that does what paid services charge for.</p>
+      <details class="howto" id="mast-howto" style="max-width:620px;margin:6px auto 0;text-align:left">
+        <summary>New here? How CodexMill works</summary>
+        <div class="howto-body">
+          <p>Describe your story in a line. CodexMill plans the whole book — premise, world, characters, chapter-by-chapter structure — and writes a ready-to-paste <b>AI prompt for every chapter</b>. You create the actual prose by pasting those prompts, one chapter at a time, into any AI (Gemini, ChatGPT, Claude, or your own local model), so each chapter comes out consistent. It's the same plan-and-prompts paid services charge for — free, self-hosted, and never leaving your own machine.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="panel">
+      <div class="seg" role="tablist">
+        <button type="button" id="mode-book" class="active" role="tab" aria-selected="true" title="Generate a single standalone book">Single book</button>
+        <button type="button" id="mode-series" role="tab" aria-selected="false" title="Generate a multi-book series with a shared world and recurring cast">Series</button>
+      </div>
+
+      <div class="surprise-row">
+        <span class="help" style="margin:0">Not sure what to write?</span>
+        <button type="button" class="btn sm secondary" id="surprise" title="Let the AI invent a fresh, one-off genre + idea + tropes for you">✨ Surprise me</button>
+      </div>
+
+      <label for="genre">Genre <span class="info" title="Any genre: cozy mystery, epic fantasy, thriller, literary, sci-fi, horror, romance…">ⓘ</span></label>
+      <input id="genre" value="cozy mystery" title="e.g. cozy mystery, epic fantasy, hard sci-fi, psychological thriller" />
+
+      <label for="premise_hint">Your idea <span class="info" title="One or two sentences. The AI turns it into a full premise, characters, and plot.">ⓘ</span></label>
+      <p class="help">One or two sentences — what's the story about?</p>
+      <textarea id="premise_hint" title="A one or two sentence seed idea for the story" placeholder="A retired librarian solves a murder at the county fair."></textarea>
+
+      <label for="tropes">Themes &amp; tropes <span class="info" title="Optional. Comma-separated elements to weave in, e.g. enemies-to-lovers, chosen one, heist gone wrong. Leave blank and the AI picks fitting ones.">ⓘ</span></label>
+      <input id="tropes" title="Comma-separated tropes to feature (optional)" placeholder="small-town, amateur sleuth, red herring" />
+
+      <div id="length-wrap">
+        <label for="length">Length <span class="info" title="Short story to epic. Sets the number of chapters; set an exact count under Advanced.">ⓘ</span></label>
+        <select id="length" title="Approximate size of the book">
+          <option value="6" data-words="7500">Short story (~6 short chapters, ~7.5k words)</option>
+          <option value="15" data-words="40000">Novella (~15 chapters, ~40k words)</option>
+          <option value="24" selected data-words="80000">Novel (~24 chapters, ~80k words)</option>
+          <option value="30" data-words="120000">Epic (~30 chapters, ~120k words)</option>
+        </select>
+      </div>
+
+      <div id="series-fields" class="series-fields" style="display:none">
+        <div>
+          <label for="books">Books <span class="info" title="Number of books in the series (2–12).">ⓘ</span></label>
+          <input id="books" type="number" min="2" max="12" value="3" title="Number of books in the series" />
+        </div>
+        <div>
+          <label for="chapters_per_book">Chapters per book <span class="info" title="How many chapters each book has.">ⓘ</span></label>
+          <input id="chapters_per_book" type="number" min="1" max="40" value="12" title="Chapters in each book" />
+        </div>
+      </div>
+
+      <details>
+        <summary title="Optional fine-tuning — sensible defaults are used if you skip this">Advanced options</summary>
+        <div class="row" style="margin-top:14px">
+          <div>
+            <label for="pov">Point of view</label>
+            <select id="pov" title="The narrative viewpoint of the story">
+              <option value="third-limited">Third-person, limited</option>
+              <option value="first-person">First-person</option>
+              <option value="third-omniscient">Third-person, omniscient</option>
+            </select>
+          </div>
+          <div>
+            <label for="maturity">Content rating <span class="info" title="Violence, language, and romance overall — like a film rating.">ⓘ</span></label>
+            <select id="maturity" title="Overall content maturity">
+              <option value="all-ages">All ages</option>
+              <option value="teen" selected>Teen</option>
+              <option value="mature">Mature</option>
+              <option value="explicit">Explicit</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label for="chapters">Exact chapter count <span class="info" title="Overrides the Length dropdown.">ⓘ</span></label>
+            <input id="chapters" type="number" min="1" max="60" title="Precise number of chapters; overrides Length" placeholder="e.g. 24" />
+          </div>
+          <div>
+            <label for="target_words">Target word count <span class="info" title="A rough target for the finished novel; guides pacing.">ⓘ</span></label>
+            <input id="target_words" type="number" min="5000" step="5000" value="80000" title="Approximate finished word count (auto-set from Length; override here if you want)" />
+          </div>
+        </div>
+        <label for="framework">Story structure <span class="info" title="Auto picks by genre; three-act and romance beats are common templates.">ⓘ</span></label>
+        <select id="framework" title="Beat framework used to structure the chapters">
+          <option value="auto">Auto (pick by genre)</option>
+          <option value="three-act">Three-act</option>
+          <option value="romance">Romance beats</option>
+        </select>
+      </details>
+
+      <div class="engine" id="engine"></div>
+      <div class="actions">
+        <span></span>
+        <button class="btn" id="go" title="Build the full story bible using the settings above">Generate story bible</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <p class="foot">CodexMill · free &amp; open source, licensed <a href="https://www.gnu.org/licenses/agpl-3.0.html" title="GNU Affero General Public License v3.0">AGPL-3.0</a><span id="source-link"></span></p>
+  </div>
+
+  <!-- ============ FIRST RUN: CREATE THE ADMIN ACCOUNT (step 1) ============ -->
+  <div class="wrap" id="setup-view" style="display:none">
+    <div class="onboard">
+      <div class="onboard-badge"><span></span><span></span><span></span></div>
+      <div class="kicker" style="margin-top:12px">Welcome · Step 1 of 2</div>
+      <h2>Create your account</h2>
+      <p>This instance is yours. Set a username and password to protect it — nobody else who can reach this address should be able to read your stories, spend your API key, or change your settings. You'll sign in with these from now on.</p>
+      <label for="su-user">Username</label>
+      <input id="su-user" autocomplete="username" placeholder="you" />
+      <label for="su-pass">Password <span class="info" title="At least 8 characters. Stored only as a salted argon2id hash — never in plain text.">ⓘ</span></label>
+      <input id="su-pass" type="password" autocomplete="new-password" placeholder="at least 8 characters" />
+      <label for="su-pass2">Confirm password</label>
+      <input id="su-pass2" type="password" autocomplete="new-password" />
+      <div id="su-token-row" style="display:none">
+        <label for="su-token">Setup token <span class="info" title="This instance was deployed with a CODEXMILL_SETUP_TOKEN; paste it to create the account.">ⓘ</span></label>
+        <input id="su-token" type="password" placeholder="from your CODEXMILL_SETUP_TOKEN" />
+      </div>
+      <div class="onboard-cta">
+        <button class="btn" id="su-go">Create account →</button>
+      </div>
+      <div id="su-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- ============ SIGN IN ============ -->
+  <div class="wrap" id="login-view" style="display:none">
+    <div class="onboard">
+      <div class="onboard-badge"><span></span><span></span><span></span></div>
+      <div class="kicker" style="margin-top:12px">CodexMill</div>
+      <h2>Sign in</h2>
+      <label for="li-user">Username</label>
+      <input id="li-user" autocomplete="username" />
+      <label for="li-pass">Password</label>
+      <input id="li-pass" type="password" autocomplete="current-password" />
+      <div class="onboard-cta">
+        <button class="btn" id="li-go">Sign in</button>
+        <a class="onboard-skip" id="li-oidc" href="/auth/login" style="display:none">or sign in with SSO</a>
+      </div>
+      <div id="li-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- ============ ONBOARDING (first run, its own view) ============ -->
+  <div class="wrap" id="onboarding-view" style="display:none">
+    <div class="onboard">
+      <div class="onboard-badge"><span></span><span></span><span></span></div>
+      <div class="kicker" style="margin-top:12px">Welcome · Step 2 of 2</div>
+      <h2>Connect an AI engine</h2>
+      <p>Give it a one-line idea and it plans your whole book — premise, world, characters, a chapter-by-chapter outline, and a ready-to-paste AI writing prompt for every chapter. You draft the prose by pasting those prompts into any AI, one chapter at a time. Just one step to get started:</p>
+      <ol class="onboard-steps">
+        <li><b>Connect an AI engine.</b> This is the only setup — a free Google&nbsp;Gemini key (about 2 minutes) or your own local Ollama. Nothing is shared; your key and your stories stay on this machine.</li>
+        <li><b>Describe a story and hit Generate.</b> It builds stage by stage, then opens as a document you can read, export, and use.</li>
+      </ol>
+      <div class="onboard-cta">
+        <a class="btn" href="/admin?onboarding=1">Set up your engine →</a>
+        <a class="onboard-skip" href="#" id="ob-sample">or see a sample bible first</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STREAMING ============ -->
+  <div id="streaming" style="display:none">
+    <div class="spinner"></div>
+    <h2 id="stream-title">Building your story bible</h2>
+    <p class="sub" id="stream-sub">Generation time varies with the size you asked for — a longer book takes longer.</p>
+    <div class="stage-list" id="stage-list"></div>
+    <div class="count" id="stream-count"></div>
+    <div class="count stream-meta" id="stream-meta">⏱ <span id="stream-elapsed">0:00</span><span id="stream-tokens"></span></div>
+  </div>
+
+  <!-- ============ RESULT ============ -->
+  <div id="result" style="display:none">
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <button class="btn sm secondary" id="sample-back" style="display:none">← Back to setup</button>
+        <span class="title" id="doc-title">Story Bible</span>
+        <span class="wc" id="wordcount"></span>
+        <span class="wc" id="meter" title="Tokens this generation used, reported by your AI engine. Apply your provider's rate to estimate cost. Zero means the engine reported no usage (or a saved bible you just opened)."></span>
+        <span class="spacer"></span>
+        <button class="btn sm" id="download" title="Download as Markdown (.md)">Download .md</button>
+        <button class="btn sm secondary" id="docx" title="Download as Microsoft Word (.docx)">Word .docx</button>
+        <button class="btn sm secondary" id="obsidian" title="Download a .zip of per-section Markdown (Obsidian / Scrivener)">Obsidian / Scrivener</button>
+        <button class="btn sm secondary" id="copy" title="Copy the Markdown to your clipboard">Copy</button>
+        <button class="btn sm secondary" id="print" title="Print, or save as PDF">Print / PDF</button>
+      </div>
+    </div>
+    <details class="howto">
+      <summary>How to use this bible</summary>
+      <div class="howto-body">
+        <p>This is a complete <b>plan</b> for your book plus a set of <b>ready-to-paste AI prompts</b> — not the finished prose. Here's what every section is for and how to actually use it.</p>
+
+        <p class="howto-h">First, the thing that confuses everyone: "chapters" appear three times</p>
+        <p>The <em>same</em> chapters show up in three sections, at increasing depth — it's not three different lists:</p>
+        <ul>
+          <li><b>Structure</b> — a one-line-per-chapter roadmap: each chapter's title, which story beat it serves, and a sentence of what happens. Read it to see the whole arc at a glance.</li>
+          <li><b>Chapter Breakdowns</b> — those same chapters, expanded into the specific scenes and beats that happen inside each one. Read a chapter's breakdown to know what it should contain.</li>
+          <li><b>Writing Prompts</b> — those same chapters again, each turned into a copy-paste instruction that already bundles that chapter's breakdown, your characters' voices, and a "story so far" recap. <b>This is the part you paste into an AI to write the prose.</b></li>
+        </ul>
+
+        <p class="howto-h">The drafting workflow</p>
+        <ol>
+          <li>Skim <b>Premise</b> and <b>Structure</b> so you know where the book is going.</li>
+          <li>Go to <b>Writing Prompts</b>. Copy <b>chapter 1's</b> prompt, paste it into any AI chat (Gemini, ChatGPT, Claude, or your local model). The prompt tells the AI to draft the chapter <b>one scene at a time</b>, so it writes the first scene. Say <b>"continue"</b> and it writes the next, and so on to the end of the chapter. (This matters: no AI writes a whole long chapter well in a single reply — scene by scene keeps the prose sharp and stops it rushing the ending.)</li>
+          <li>Drop the finished chapter into your manuscript, edit to taste, then repeat for chapter 2, 3, … <b>in order</b>. Paste <b>one chapter's prompt at a time</b> — never the whole bible; each prompt already carries the "story so far" recap and the voice sheets, which is what keeps everything consistent.</li>
+          <li>If a chapter comes out wrong, re-read its <b>Chapter Breakdown</b> to see what it should contain, tweak the prompt (or hit <b>Regenerate</b> for that stage in the sidebar), and re-paste.</li>
+        </ol>
+
+        <p class="howto-h">What the other sections are for</p>
+        <ul>
+          <li><b>Premise</b> (logline / hook / central conflict) — your north star. Keep it in view; paste it in if the AI drifts off-concept.</li>
+          <li><b>Worldbuilding</b> (history / geography / cultures / factions / systems) — your consistency reference. When a chapter leans on world detail, paste the relevant part in as extra context; expand it yourself as the story grows.</li>
+          <li><b>Characters</b> (motivation / flaw / arc + a <em>voice sheet</em> each) — the voice sheets are already built into every chapter prompt, so dialogue stays in-character. Keep this open to check arcs and consistency, or to hand a character's voice sheet to the AI directly.</li>
+          <li><b>KDP Metadata</b> (keywords / categories / blurb / short description) — for when you publish on Amazon: drop the keywords into KDP's 7 keyword fields, use the suggested categories, and paste the blurb as your book description.</li>
+        </ul>
+
+        <p class="howto-h">Tip</p>
+        <p>Treat all of this as a strong first draft of the <em>plan</em>. Rename characters, swap a trope, rewrite a beat — then draft from your edited version. Use <b>Download .md</b> / <b>Word</b> / <b>Obsidian</b> to keep it in whatever tool you write in.</p>
+      </div>
+    </details>
+    <div class="result-layout">
+      <aside class="toc">
+        <h4>Contents</h4>
+        <nav id="toc-nav"></nav>
+        <div class="regen" id="regen-group" style="display:none">
+          <h4>Regenerate a stage</h4>
+          <select id="regen-stage" title="Re-run one stage. Anything downstream is redone too, so the bible stays consistent.">
+            <option value="premise">Premise (redoes everything)</option>
+            <option value="worldbuilding">Worldbuilding</option>
+            <option value="characters">Characters (+ downstream)</option>
+            <option value="structure">Structure (+ downstream)</option>
+            <option value="chapters">Chapter breakdowns (+ prompts)</option>
+            <option value="writing prompts">Writing prompts</option>
+            <option value="KDP metadata">KDP metadata</option>
+          </select>
+          <button class="btn secondary sm" id="regen" title="Re-run the selected stage and save it back">Regenerate</button>
+          <p class="help">Redoes this stage and everything downstream so the bible stays consistent.</p>
+        </div>
+        <div class="regen" id="series-regen-group" style="display:none">
+          <h4>Regenerate a book</h4>
+          <select id="regen-book" title="Which book of the series to regenerate"></select>
+          <button class="btn secondary sm" id="regen-book-btn" title="Re-run this book with the shared world and recurring cast">Regenerate book</button>
+        </div>
+      </aside>
+      <article id="output" class="doc"></article>
+    </div>
+  </div>
+
+  <!-- ============ LIBRARY ============ -->
+  <div class="wrap lib" id="library-view" style="display:none">
+    <h2>Library</h2>
+    <p class="sub">Every bible and series you generate is saved here, on your own server.</p>
+    <div id="lib-bibles-block">
+      <ul id="bibles"></ul>
+    </div>
+    <div id="lib-series-block" style="margin-top:26px;display:none">
+      <h2 style="font-size:22px">Series</h2>
+      <ul id="series-list"></ul>
+    </div>
+    <div id="lib-empty" class="empty">
+      <div class="icon"><span class="mark"><i></i><i></i><i></i></span></div>
+      <h3>Nothing saved yet</h3>
+      <p>Your first story bible will appear here the moment it finishes generating.</p>
+      <button class="btn" id="lib-generate">Generate your first bible</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let lastMarkdown = "", lastFilename = "story-bible.md", lastId = null, lastKind = "book", hasEngine = false, sampleMode = false;
+  let mode = "book";
+
+  /* ---------- theme toggle ---------- */
+  function setTheme(t){ document.documentElement.dataset.theme = t; try{ localStorage.setItem("cm-theme", t); }catch(e){} $("theme-toggle").textContent = t === "dark" ? "☀" : "☾"; }
+  (function initTheme(){ const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); $("theme-toggle").textContent = cur === "dark" ? "☀" : "☾"; })();
+  $("theme-toggle").addEventListener("click", () => setTheme((document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light")) === "dark" ? "light" : "dark"));
+
+  /* ---------- view switching ---------- */
+  function show(view){
+    $("view-form").style.display = view === "form" ? "" : "none";
+    $("setup-view").style.display = view === "setup" ? "" : "none";
+    $("login-view").style.display = view === "login" ? "" : "none";
+    $("onboarding-view").style.display = view === "onboarding" ? "" : "none";
+    $("streaming").style.display = view === "streaming" ? "" : "none";
+    $("result").style.display = view === "result" ? "" : "none";
+    $("library-view").style.display = view === "library" ? "" : "none";
+    // account setup / sign-in / onboarding are focused screens — hide the nav so there's nowhere to wander
+    const focused = view === "onboarding" || view === "setup" || view === "login"
+      || (view === "result" && sampleMode);
+    document.querySelector(".navlinks").style.display = focused ? "none" : "";
+    document.querySelectorAll(".navlinks a").forEach(a => a.classList.remove("active"));
+    if (view === "library") $("nav-library").classList.add("active");
+    else if (view === "form") document.querySelector('.navlinks a[href="/"]').classList.add("active");
+    window.scrollTo(0, 0);
+  }
+  $("nav-library").addEventListener("click", (e) => { e.preventDefault(); show("library"); });
+  $("lib-generate").addEventListener("click", () => show("form"));
+
+  /* ---------- mode ---------- */
+  function setMode(m){
+    mode = m;
+    $("mode-book").classList.toggle("active", m === "book");
+    $("mode-book").setAttribute("aria-selected", m === "book");
+    $("mode-series").classList.toggle("active", m === "series");
+    $("mode-series").setAttribute("aria-selected", m === "series");
+    $("length-wrap").style.display = m === "book" ? "" : "none";
+    $("series-fields").style.display = m === "series" ? "flex" : "none";
+    if (!$("go").dataset.login && !$("go").dataset.setup)
+      $("go").textContent = m === "series" ? "Generate series" : "Generate story bible";
+  }
+  $("mode-book").addEventListener("click", () => { setMode("book"); saveForm(); });
+  $("mode-series").addEventListener("click", () => { setMode("series"); saveForm(); });
+
+  /* ---------- form state persistence ----------
+     Keep the New Bible inputs (incl. Surprise-me values) if you pop over to Settings and back.
+     sessionStorage lives until the tab closes; we also clear it once a generation succeeds. */
+  const FORM_FIELDS = ["genre","premise_hint","tropes","length","books","chapters_per_book","pov","maturity","chapters","target_words","framework"];
+  function saveForm(){
+    try {
+      const data = { mode };
+      FORM_FIELDS.forEach(id => { const el = $(id); if (el) data[id] = el.value; });
+      sessionStorage.setItem("cm-form", JSON.stringify(data));
+    } catch (e){}
+  }
+  function restoreForm(){
+    try {
+      const raw = sessionStorage.getItem("cm-form"); if (!raw) return;
+      const data = JSON.parse(raw);
+      FORM_FIELDS.forEach(id => { const el = $(id); if (el && data[id] != null) el.value = data[id]; });
+      if (data.mode) setMode(data.mode);
+    } catch (e){}
+  }
+  function clearForm(){ try { sessionStorage.removeItem("cm-form"); } catch (e){} }
+  FORM_FIELDS.forEach(id => { const el = $(id); if (el){ el.addEventListener("input", saveForm); el.addEventListener("change", saveForm); } });
+  // Length is the coarse control: picking it sets a sensible total word target (a "short story"
+  // shouldn't aim at a novel's 80k). Advanced > Target word count still overrides it afterwards.
+  $("length").addEventListener("change", () => {
+    const w = $("length").selectedOptions[0] && $("length").selectedOptions[0].dataset.words;
+    if (w) $("target_words").value = w;
+    saveForm();
+  });
+
+  /* ---------- request building (unchanged contract) ---------- */
+  function buildRequest(){
+    const tropes = $("tropes").value.split(",").map(s => s.trim()).filter(Boolean);
+    const idea = $("premise_hint").value.trim() || null;
+    if (mode === "series"){
+      const spec = {
+        genre: $("genre").value.trim(), tropes,
+        series_premise_hint: idea,
+        books: parseInt($("books").value, 10) || 3,
+        chapters_per_book: parseInt($("chapters_per_book").value, 10) || 12,
+        pov: $("pov").value, maturity: $("maturity").value, framework: $("framework").value,
+      };
+      return { url: "/api/series/stream", body: { spec } };
+    }
+    const chapters = parseInt($("chapters").value, 10) || parseInt($("length").value, 10) || 24;
+    const spec = {
+      genre: $("genre").value.trim(), tropes,
+      premise_hint: idea, chapters,
+      pov: $("pov").value, maturity: $("maturity").value,
+      target_words: parseInt($("target_words").value, 10) || 60000, framework: $("framework").value,
+    };
+    return { url: "/api/generate/stream", body: { spec } };
+  }
+
+  /* ---------- markdown renderer (dependency-free, from original) ---------- */
+  function mdInline(s){ return s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>"); }
+  function renderMarkdown(md){
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const lines = md.split("\n"); let html = "", i = 0, inList = false;
+    const closeList = () => { if (inList){ html += "</ul>"; inList = false; } };
+    while (i < lines.length){
+      const line = lines[i];
+      if (line.startsWith("```")){ closeList(); i++; let code = "";
+        while (i < lines.length && !lines[i].startsWith("```")){ code += esc(lines[i]) + "\n"; i++; }
+        i++; html += `<div class="cb">${code.replace(/\n$/, "")}</div>`; continue; }
+      if (/^### /.test(line)){ closeList(); html += `<h3>${mdInline(esc(line.slice(4)))}</h3>`; }
+      else if (/^## /.test(line)){ closeList(); html += `<h2>${mdInline(esc(line.slice(3)))}</h2>`; }
+      else if (/^# /.test(line)){ closeList(); html += `<h1>${mdInline(esc(line.slice(2)))}</h1>`; }
+      else if (/^- /.test(line)){ if (!inList){ html += "<ul>"; inList = true; } html += `<li>${mdInline(esc(line.slice(2)))}</li>`; }
+      else if (line.trim() === ""){ closeList(); }
+      else { closeList(); html += `<p>${mdInline(esc(line))}</p>`; }
+      i++;
+    }
+    closeList(); return html;
+  }
+
+  /* ---------- TOC (built from rendered <h2>s; dependency-free) ---------- */
+  function buildToc(){
+    const nav = $("toc-nav"); nav.innerHTML = "";
+    const heads = $("output").querySelectorAll("h2");
+    heads.forEach((h, i) => {
+      const id = "sec-" + i; h.id = id;
+      const a = document.createElement("a"); a.textContent = h.textContent; a.dataset.target = id;
+      a.onclick = () => { const el = document.getElementById(id); const y = el.getBoundingClientRect().top + window.scrollY - 140; window.scrollTo({ top: y, behavior: "smooth" }); };
+      nav.appendChild(a);
+    });
+    if (heads.length) nav.firstChild.classList.add("active");
+    onScrollToc();
+  }
+  function onScrollToc(){
+    const links = [...$("toc-nav").children]; if (!links.length) return;
+    let active = 0;
+    links.forEach((a, i) => { const el = document.getElementById(a.dataset.target); if (el && el.getBoundingClientRect().top < 200) active = i; });
+    links.forEach((a, i) => a.classList.toggle("active", i === active));
+  }
+  window.addEventListener("scroll", () => { if ($("result").style.display !== "none") onScrollToc(); });
+
+  /* ---------- streaming checklist ---------- */
+  const STAGES = ["Premise","Worldbuilding","Characters","Structure","Chapter breakdowns","Writing prompts","KDP metadata"];
+  function renderStages(currentLabel){
+    // Match the incoming stage label loosely against our display list; series labels look like "book 2 · structure".
+    const norm = (currentLabel || "").toLowerCase();
+    let activeIdx = STAGES.findIndex(s => norm.includes(s.toLowerCase().split(" ")[0]));
+    if (activeIdx < 0) activeIdx = 0;
+    $("stage-list").innerHTML = STAGES.map((label, i) => {
+      const cls = i < activeIdx ? "done" : (i === activeIdx ? "active" : "");
+      const dot = i < activeIdx ? "✓" : (i + 1);
+      const note = i < activeIdx ? "done" : (i === activeIdx ? "writing…" : "");
+      return `<div class="stage ${cls}"><div class="sdot">${dot}</div><div class="slabel">${label}</div><div class="snote">${note}</div></div>`;
+    }).join("");
+  }
+
+  /* ---------- streaming elapsed timer + live token count ---------- */
+  let genTimer = null, genStart = 0;
+  function fmtElapsed(s){ return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function tickTimer(){ $("stream-elapsed").textContent = fmtElapsed(Math.floor((Date.now() - genStart) / 1000)); }
+  function startTimer(){ genStart = Date.now(); $("stream-tokens").textContent = ""; tickTimer(); genTimer = setInterval(tickTimer, 1000); }
+  function stopTimer(){ if (genTimer){ clearInterval(genTimer); genTimer = null; } }
+  function showStreamTokens(usage){ const t = usage && usage.total_tokens ? usage.total_tokens : 0; $("stream-tokens").textContent = t ? " · " + t.toLocaleString() + " tokens" : ""; }
+  // Human-friendly generation time for the library rows (e.g. "45s", "1m 23s").
+  function fmtDur(s){ s = Math.round(s); if (s < 60) return s + "s"; return Math.floor(s / 60) + "m " + (s % 60) + "s"; }
+
+  function showWords(md){ $("wordcount").textContent = "≈ " + md.trim().split(/\s+/).length.toLocaleString() + " words"; }
+  function showMeter(usage){
+    const t = usage && usage.total_tokens ? usage.total_tokens : 0;
+    $("meter").textContent = t ? "· " + t.toLocaleString() + " tokens" : "";
+  }
+
+  function renderResult(md){
+    $("output").innerHTML = renderMarkdown(md);
+    // hoist the first "# Story Bible" style heading into the toolbar title if present
+    buildToc(); showWords(md); showMeter(null); show("result");
+  }
+
+  /* ---------- toolbar state ---------- */
+  function updateToolbar(){
+    // focused sample: just a "back to setup" button, no export/regenerate chrome
+    $("sample-back").style.display = sampleMode ? "inline-block" : "none";
+    ["download","docx","obsidian","copy","print"].forEach(id => $(id).style.display = sampleMode ? "none" : "");
+    if (sampleMode){ $("regen-group").style.display = "none"; $("series-regen-group").style.display = "none"; return; }
+    const haveId = !!lastId, isBook = lastKind === "book", isSeries = lastKind === "series";
+    $("docx").disabled = !haveId; $("obsidian").disabled = !haveId;
+    $("regen-group").style.display = (haveId && isBook && hasEngine) ? "block" : "none";
+    $("series-regen-group").style.display = (haveId && isSeries && hasEngine) ? "block" : "none";
+  }
+  function exportUrl(fmt){ return (lastKind === "series" ? "/api/series/" : "/api/bibles/") + lastId + "/export?format=" + fmt; }
+
+  /* ---------- generate (SSE) ---------- */
+  $("go").addEventListener("click", async () => {
+    if ($("go").dataset.login === "1"){ window.location = "/auth/login"; return; }
+    if ($("go").dataset.setup === "1"){ window.location = "/admin"; return; }
+    const status = $("status"); status.className = ""; status.textContent = "";
+    $("go").disabled = true;
+    const req = buildRequest(), thisKind = mode;
+    const idea = $("premise_hint").value.trim() || "your idea";
+    $("stream-title").textContent = thisKind === "series" ? "Building your series" : "Building your story bible";
+    $("stream-sub").textContent = `Weaving “${idea}” into a complete codex. Generation time scales with the size you asked for.`;
+    renderStages(""); $("stream-count").textContent = "Starting…"; show("streaming"); startTimer();
+    try {
+      const resp = await fetch(req.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req.body) });
+      if (resp.status === 401){ window.location.reload(); return; }  // session gone -> sign in
+      if (!resp.ok){ const d = await resp.json().catch(() => ({})); throw new Error(d.detail || ("HTTP " + resp.status)); }
+      const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = "";
+      while (true){
+        const { value, done } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true }); let i;
+        while ((i = buf.indexOf("\n\n")) >= 0){
+          const line = buf.slice(0, i).split("\n").find(l => l.startsWith("data:")); buf = buf.slice(i + 2);
+          if (!line) continue;
+          const ev = JSON.parse(line.slice(5).trim());
+          if (ev.error) throw new Error(ev.error);
+          else if (ev.done){
+            lastMarkdown = ev.markdown; lastFilename = ev.filename; lastId = ev.id; lastKind = thisKind; sampleMode = false; $("result").classList.remove("sample"); updateToolbar();
+            renderResult(ev.markdown); showMeter(ev.usage); clearForm(); loadBibles(); loadSeries();
+          } else { renderStages(ev.stage); $("stream-count").textContent = `Generating stage ${ev.index} of ${ev.total} — ${ev.stage}`; showStreamTokens(ev.usage); }
+        }
+      }
+    } catch (err){ showError(err.message); }
+    finally { $("go").disabled = false; stopTimer(); }
+  });
+
+  function showError(msg){
+    show("form");
+    const status = $("status"); status.className = "error"; status.textContent = "Generation failed: " + msg + " — check your AI engine in Settings and try again.";
+  }
+
+  /* ---------- exports / clipboard / print ---------- */
+  $("download").addEventListener("click", () => {
+    const blob = new Blob([lastMarkdown], { type: "text/markdown" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = lastFilename; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(lastMarkdown); $("copy").textContent = "Copied"; setTimeout(() => { $("copy").textContent = "Copy"; }, 1500); }
+    catch (e){ /* clipboard blocked */ }
+  });
+  $("print").addEventListener("click", () => window.print());
+  $("docx").addEventListener("click", () => { if (lastId) window.location = exportUrl("docx"); });
+  $("obsidian").addEventListener("click", () => { if (lastId) window.location = exportUrl("obsidian"); });
+
+  /* ---------- regenerate ---------- */
+  $("regen").addEventListener("click", async () => {
+    if (!lastId) return;
+    const stage = $("regen-stage").value; $("regen").disabled = true;
+    try {
+      const r = await fetch("/api/bibles/" + lastId + "/regenerate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage }) });
+      if (r.status === 401){ window.location.reload(); return; }  // session gone -> sign in
+      if (!r.ok){ const d = await r.json().catch(() => ({})); throw new Error(d.detail || ("HTTP " + r.status)); }
+      const d = await r.json(); lastMarkdown = d.markdown; lastFilename = d.filename; renderResult(d.markdown); showMeter(d.usage); loadBibles();
+    } catch (err){ alert("Regenerate failed: " + err.message); }
+    finally { $("regen").disabled = false; }
+  });
+  $("regen-book-btn").addEventListener("click", async () => {
+    if (!lastId) return;
+    const book = parseInt($("regen-book").value, 10) || 1; $("regen-book-btn").disabled = true;
+    try {
+      const r = await fetch("/api/series/" + lastId + "/regenerate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book }) });
+      if (r.status === 401){ window.location.reload(); return; }  // session gone -> sign in
+      if (!r.ok){ const d = await r.json().catch(() => ({})); throw new Error(d.detail || ("HTTP " + r.status)); }
+      const d = await r.json(); lastMarkdown = d.markdown; lastFilename = d.filename; renderResult(d.markdown); showMeter(d.usage); loadSeries();
+    } catch (err){ alert("Regenerate failed: " + err.message); }
+    finally { $("regen-book-btn").disabled = false; }
+  });
+
+  /* ---------- libraries ---------- */
+  function renderList(ul, items, onOpen, onDel){
+    ul.innerHTML = "";
+    for (const it of items){
+      const li = document.createElement("li");
+      const a = document.createElement("a"); a.className = "open"; a.textContent = it.title || "(untitled)"; a.title = "Open this";
+      a.onclick = (e) => { e.preventDefault(); onOpen(it.id); };
+      const meta = document.createElement("span"); meta.className = "meta"; meta.textContent = (it.genre || "") + " · " + (it.created_at || "").slice(0, 10) + (it.tokens ? " · " + it.tokens.toLocaleString() + " tokens" : "") + (it.gen_seconds ? " · " + fmtDur(it.gen_seconds) : "");
+      const del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "Delete"; del.onclick = () => onDel(it.id);
+      li.append(a, meta, del); ul.append(li);
+    }
+  }
+  function refreshEmpty(){
+    const b = $("bibles").children.length, s = $("series-list").children.length;
+    $("lib-empty").style.display = (b || s) ? "none" : "block";
+    $("lib-bibles-block").style.display = b ? "block" : "none";
+    $("lib-series-block").style.display = s ? "block" : "none";
+  }
+  async function loadBibles(){
+    try {
+      const r = await fetch("/api/bibles"); if (r.status === 401){ return; }
+      const items = await r.json(); renderList($("bibles"), items, openBible, delBible); refreshEmpty();
+    } catch (e){}
+  }
+  async function openBible(id){
+    const r = await fetch("/api/bibles/" + id); if (!r.ok) return;
+    const d = await r.json(); lastMarkdown = d.markdown; lastFilename = d.filename; lastId = id; lastKind = "book"; sampleMode = false; $("result").classList.remove("sample"); updateToolbar(); renderResult(d.markdown);
+  }
+  async function delBible(id){ if (!confirm("Delete this bible?")) return; await fetch("/api/bibles/" + id, { method: "DELETE" }); loadBibles(); }
+
+  async function loadSeries(){
+    try {
+      const r = await fetch("/api/series"); if (r.status === 401){ return; }
+      const items = await r.json(); renderList($("series-list"), items, openSeries, delSeries); refreshEmpty();
+      // populate the book-regenerate select with a sensible range
+      const sel = $("regen-book"); if (sel && !sel.children.length){ for (let i=1;i<=12;i++){ const o=document.createElement("option"); o.value=i; o.textContent="Book "+i; sel.appendChild(o); } }
+    } catch (e){}
+  }
+  async function openSeries(id){
+    const r = await fetch("/api/series/" + id); if (!r.ok) return;
+    const d = await r.json(); lastMarkdown = d.markdown; lastFilename = d.filename; lastId = id; lastKind = "series"; sampleMode = false; $("result").classList.remove("sample"); updateToolbar(); renderResult(d.markdown);
+  }
+  async function delSeries(id){ if (!confirm("Delete this series?")) return; await fetch("/api/series/" + id, { method: "DELETE" }); loadSeries(); }
+
+  /* ---------- see a sample (works with no engine — loads the bundled sample bible) ---------- */
+  async function showSample(fromOnboarding){
+    try {
+      const r = await fetch("/sample.md"); if (!r.ok){ $("status").textContent = "No sample available."; return; }
+      const md = await r.text();
+      lastMarkdown = md; lastFilename = "codexmill-sample.md"; lastId = null; lastKind = "book";
+      sampleMode = !!fromOnboarding;                       // focused: no nav, no export chrome, back-to-setup
+      $("result").classList.toggle("sample", sampleMode);
+      $("doc-title").textContent = sampleMode ? "Sample story bible" : "Story Bible";
+      updateToolbar(); renderResult(md);
+    } catch (e){ /* ignore */ }
+  }
+  $("sample-back").addEventListener("click", () => { sampleMode = false; $("result").classList.remove("sample"); show("onboarding"); });
+
+  $("surprise").addEventListener("click", async () => {
+    const btn = $("surprise"), label = btn.textContent; btn.disabled = true; btn.textContent = "Inventing…";
+    $("status").className = ""; $("status").textContent = "";
+    try {
+      const r = await fetch("/api/surprise", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      if (r.status === 401){ window.location.reload(); return; }  // session gone -> sign in
+      if (!r.ok){ const d = await r.json().catch(() => ({})); throw new Error(d.detail || ("HTTP " + r.status)); }
+      const s = await r.json();
+      $("genre").value = s.genre || "";
+      $("premise_hint").value = s.premise_hint || "";
+      $("tropes").value = (s.tropes || []).join(", ");
+      saveForm();  // JS-set values don't fire input events, so persist explicitly
+    } catch (err){ $("status").className = "error"; $("status").textContent = "Couldn't invent one: " + err.message; }
+    finally { btn.disabled = false; btn.textContent = label; }
+  });
+
+  /* ---------- local account: first-run setup + sign in (ADR 0024) ---------- */
+  function authMsg(id, text, err){ const m = $(id); m.textContent = text; m.className = "msg" + (err ? " err" : ""); }
+  $("su-go").addEventListener("click", async () => {
+    const u = $("su-user").value.trim(), p = $("su-pass").value, p2 = $("su-pass2").value;
+    if (!u) return authMsg("su-msg", "Pick a username.", true);
+    if (p.length < 8) return authMsg("su-msg", "Password must be at least 8 characters.", true);
+    if (p !== p2) return authMsg("su-msg", "The passwords don't match.", true);
+    $("su-go").disabled = true; authMsg("su-msg", "Creating your account…");
+    try {
+      const headers = {"Content-Type":"application/json"};
+      const tok = $("su-token").value.trim(); if (tok) headers["X-Setup-Token"] = tok;
+      const r = await fetch("/api/auth/setup", { method:"POST", headers, body: JSON.stringify({ username:u, password:p }) });
+      if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || ("HTTP " + r.status)); }
+      window.location.reload();   // signed in; init() now sends us to engine setup
+    } catch (err){ authMsg("su-msg", "Couldn't create the account: " + err.message, true); $("su-go").disabled = false; }
+  });
+  $("li-go").addEventListener("click", async () => {
+    const u = $("li-user").value.trim(), p = $("li-pass").value;
+    $("li-go").disabled = true; authMsg("li-msg", "Signing in…");
+    try {
+      const r = await fetch("/api/auth/login", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ username:u, password:p }) });
+      if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || ("HTTP " + r.status)); }
+      window.location.reload();
+    } catch (err){ authMsg("li-msg", err.message, true); $("li-go").disabled = false; }
+  });
+  $("li-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("li-go").click(); });
+  $("su-pass2").addEventListener("keydown", (e) => { if (e.key === "Enter") $("su-go").click(); });
+  async function doLogout(){ try { await fetch("/api/auth/logout", { method:"POST" }); } catch(e){} window.location.reload(); }
+
+  /* ---------- init (/api/me drives CTA + footer) ---------- */
+  async function init(){
+    try {
+      const me = await (await fetch("/api/me")).json();
+      // Auth gates everything: first run -> create an admin account; otherwise -> sign in.
+      if (me.needs_setup){ if (me.setup_requires_token) $("su-token-row").style.display = ""; show("setup"); return; }
+      if (!me.authenticated){
+        if (me.oidc_enabled) $("li-oidc").style.display = "";
+        show("login"); return;
+      }
+      // signed in: show who, and offer sign-out
+      const out = document.createElement("a");
+      out.href = "#"; out.id = "nav-logout"; out.title = "Sign out";
+      out.textContent = me.username ? ("Sign out (" + me.username + ")") : "Sign out";
+      out.onclick = (e) => { e.preventDefault(); doLogout(); };
+      document.querySelector(".navlinks").insertBefore(out, $("theme-toggle"));
+      hasEngine = !!me.has_llm_default;
+      if (me.source_url){ const s = document.createElement("a"); s.href = me.source_url; s.textContent = "Source"; s.title = "This instance's source (AGPL §13)"; $("source-link").append(" · ", s); }
+      if (me.feedback_email){ const f = document.createElement("a"); f.href = "mailto:" + me.feedback_email + "?subject=CodexMill%20beta%20feedback"; f.textContent = "Send feedback"; f.title = "Tell us what worked, what broke, what you'd want"; $("source-link").append(" · ", f); }
+      if (hasEngine){
+        $("engine").innerHTML = '<span class="dot"></span> Engine ready. <a href="/admin" title="Change your AI engine or key">Change in Settings</a>';
+      } else {
+        $("go").textContent = "Set up an AI engine →"; $("go").dataset.setup = "1";
+        $("engine").innerHTML = '<span class="dot" style="background:var(--muted2)"></span> No AI engine set up yet. <a href="/admin" title="Choose an AI engine and key">Set one up in Settings →</a>';
+        // first run (no engine): the onboarding is its own view
+        show("onboarding");
+      }
+      const sl = document.createElement("a"); sl.href = "#"; sl.textContent = "See a sample";
+      sl.title = "View a pre-made example bible"; sl.onclick = (e) => { e.preventDefault(); showSample(false); };
+      $("engine").append(" · ", sl);
+    } catch (e){ $("engine").textContent = ""; }
+    const os = document.getElementById("ob-sample"); if (os) os.onclick = (e) => { e.preventDefault(); showSample(true); };
+  }
+
+  // real tooltips: move native title= into data-tip (styled CSS bubble; instant + reliable)
+  document.querySelectorAll('.info[title]').forEach(el => { el.dataset.tip = el.getAttribute('title'); el.removeAttribute('title'); });
+  setMode("book"); restoreForm(); init(); loadBibles(); loadSeries();
+  if (location.hash === "#library") show("library");  // arriving from Settings' "Library" link
+  window.addEventListener("hashchange", () => { if (location.hash === "#library") show("library"); });
+</script>
+</body>
+</html>

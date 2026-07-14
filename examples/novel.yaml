@@ -1,0 +1,13 @@
+# Novel-scale spec (24 chapters). `codexmill generate --spec examples/novel.yaml`
+# On a real model this produces a full ~40-58k-word bible; use examples/minimal.yaml for a quick test.
+genre: cozy mystery
+tropes:
+  - amateur sleuth
+  - small-town
+  - reluctant partnership
+premise_hint: A retired librarian solves a murder at the county fair.
+chapters: 24
+pov: third-limited
+maturity: all-ages
+target_words: 60000
+framework: auto
