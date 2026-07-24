@@ -1,0 +1,33 @@
+# CodexMill — self-host in one command:  docker compose up -d  →  http://localhost:8000
+# Configure your AI engine in Settings (⚙) once it's running, or uncomment the env below.
+services:
+  codexmill:
+    build: .
+    image: codexmill:latest
+    container_name: codexmill
+    ports:
+      - "8000:8000"
+    volumes:
+      - codexmill-data:/data # config store + saved bibles, persisted across restarts
+    extra_hosts:
+      # lets the container reach an Ollama running on the host at http://host.docker.internal:11434/v1
+      # (Docker Desktop on Mac/Windows provides this automatically; this line adds it on Linux too)
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Encrypt stored API keys / OIDC secrets at rest (recommended). Generate once: openssl rand -hex 32
+      CODEXMILL_SECRET_KEY: "${CODEXMILL_SECRET_KEY:-}"
+      # Default Ollama URL the Settings page suggests. Inside Docker the host's Ollama is at
+      # host.docker.internal (NOT localhost, which is the container itself). Change to your host's
+      # LAN IP if host.docker.internal doesn't resolve on your setup.
+      CODEXMILL_OLLAMA_URL: "http://host.docker.internal:11434/v1"
+      # Optional: point at an AI engine so it works out of the box (else configure it in Settings).
+      # For a local Ollama on the host: host.docker.internal on Docker Desktop, or the host's LAN IP.
+      # CODEXMILL_BASE_URL: "http://host.docker.internal:11434/v1"
+      # CODEXMILL_MODEL: "llama3.2"   # any model you've pulled (ollama list); or pick it in Settings
+      # CODEXMILL_API_KEY: "ollama"
+      # AGPL §13: if you modify CodexMill and serve it to others, publish your source and set this URL.
+      # CODEXMILL_SOURCE_URL: "https://github.com/functional-slop/codexmill"
+    restart: unless-stopped
+
+volumes:
+  codexmill-data:

@@ -1,0 +1,13 @@
+# A multi-book series spec. `codexmill series --spec examples/series.yaml --out out/`
+# Worldbuilding + the recurring cast are generated once and shared across all books (ADR 0018).
+genre: epic fantasy
+tropes:
+  - reluctant heir
+  - dying magic
+  - found family
+series_premise_hint: A kingdom's magic is failing one province at a time; an exiled cartographer maps the collapse and, book by book, the conspiracy behind it.
+books: 3
+chapters_per_book: 12
+pov: third-limited
+maturity: teen
+framework: auto

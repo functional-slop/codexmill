@@ -1,0 +1,12 @@
+# Golden-path spec. `codexmill generate --spec examples/minimal.yaml` uses this.
+genre: cozy romance
+tropes:
+  - small-town
+  - grumpy-sunshine
+  - second-chance
+premise_hint: A burned-out pastry chef inherits her aunt's failing seaside bakery.
+chapters: 3
+pov: third-limited
+maturity: all-ages
+target_words: 20000
+framework: auto

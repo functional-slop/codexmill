@@ -1,0 +1,63 @@
+# Security posture
+
+CodexMill is a **mass-market, local-first self-hosted app**. It must be
+secure on its own, with no external identity provider — the local account IS the auth.
+
+## Model
+- **Auth is mandatory (ADR 0024).** A fresh instance is *closed*: only `/api/me` (to drive the
+  first-run UI) and `/api/auth/setup` respond until a local admin account exists. After that every
+  route requires a session. Setup refuses once an account exists, and is not available when OIDC is
+  configured — it can't be used to take over an instance.
+- **Passwords:** argon2id (`argon2-cffi`, OWASP first choice), per-password salt, constant-time
+  verify, rehash-on-login, and a dummy-verify on unknown users so response timing can't enumerate
+  usernames. Login is rate-limited (5 failures / 5 min per client address → 429).
+- **Sessions:** Starlette signed cookies (HMAC via the persisted 256-bit `session_secret`),
+  `HttpOnly`, `SameSite=lax`, capped lifetime (7d, `CODEXMILL_SESSION_MAX_AGE`). A per-identity
+  **session epoch** is stamped into each cookie and checked per request; logout / password change
+  rotates it, so a captured cookie stops working after logout (stateless-cookie revocation).
+- **Secrets at rest:** always encrypted (Fernet). The key is `CODEXMILL_SECRET_KEY` or an
+  auto-generated, persisted `secret.key` — encryption is never opt-in. The config store and key file
+  are written 0600-from-creation (atomic `O_EXCL`), never briefly world-readable.
+- **OIDC/SSO (optional)** composes on top for shared instances; admin = the local account, an OIDC
+  user on the email allowlist (fail-closed on an empty allowlist), or the `CODEXMILL_SETUP_TOKEN`
+  break-glass (header-only, never in a URL).
+- **Per-user keys (ADR 0027):** a user's own provider key is sealed at rest, scoped to their account,
+  and never returned by any endpoint (write-only) — so no user can read another's. The provider is
+  chosen from a fixed allow-list, so a user can't supply an arbitrary `base_url` (no new SSRF).
+  Secrecy is bounded by **operator trust**: the server needs the plaintext to make the call, so
+  whoever runs the instance can technically read it. There is no zero-knowledge guarantee in a
+  server-side-calls design, and the UI says so next to the key field. This is the standard trust
+  deal for any hosted tool that holds your key.
+
+## Audited (2026-07-12) — 4 independent adversarial reviews
+Auth mechanism, secret leakage, endpoint authorization / injection / SSRF / traversal, and
+packaging/supply-chain. **Confirmed clean:** no IDOR (every read/list/export/regenerate/delete
+is owner-scoped), no SQL injection (all queries parameterized), no XSS (the markdown renderer escapes
+before insert and emits no attributes/links), no path traversal or zip-slip (`slugify` restricts to
+`[a-z0-9-]`), no eval/exec/pickle/unsafe-yaml, no secret in git history or bundled in the kit/binary,
+Docker runs non-root on a frozen lockfile. All findings were fixed pre-release (see CHANGELOG).
+
+## Accepted-by-design tradeoffs (NOT defects — do not "fix" into something worse)
+- **SSRF via an admin-supplied `base_url`.** Generation connects to whatever OpenAI-compatible
+  endpoint the server's AI config points at. Internal/loopback addresses **cannot** be blocked
+  because pointing at a local Ollama at `http://127.0.0.1:11434/v1` (or a LAN IP) is the primary use
+  case. **Only an admin can set that URL:** the per-request `base_url`/`api_key`/`backend` override
+  fields are honoured only for admins, so a signed-in non-admin can neither redirect the server at an
+  internal address nor exfiltrate the shared key by pointing generation at their own host. For a
+  single-user local instance this is inert. On a multi-user instance the residual surface is
+  admin-only (an admin can already set the config outright); enable egress controls at the proxy if
+  that matters.
+- **Rate-limit / generation quota is OFF by default** (ADR 0022). Correct for single-user (you don't
+  throttle yourself); a shared instance should turn it on in Settings.
+- **`X-Forwarded-For` is not trusted** (login throttle keys on the socket peer). Correct default —
+  trusting it would let an attacker forge a fresh key per request. Behind a reverse proxy the throttle
+  degrades to a single bucket (a whole-instance lockout is possible); acceptable for self-host scale.
+- **Plain HTTP:** the session cookie isn't `Secure` unless `CODEXMILL_HTTPS_ONLY=1` (most local
+  deploys have no TLS). Put it behind a TLS proxy for a network-exposed instance.
+
+## Deploy notes
+- **Preserve `CODEXMILL_SECRET_KEY` / `secret.key`** across updates or sealed values (the stored API
+  key) become undecryptable.
+- If you deploy by pip-installing deps at container start (rather than the pinned `uv.lock`), pin them
+  to **exact versions**, so a redeploy can't pull a newly-published malicious release. The bundled
+  `Dockerfile` already installs from the frozen `uv.lock`, which is the safe default.

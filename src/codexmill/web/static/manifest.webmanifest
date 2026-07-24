@@ -1,0 +1,16 @@
+{
+  "name": "CodexMill — Story Bible Generator",
+  "short_name": "CodexMill",
+  "description": "Turn a one-line idea into a complete story bible — premise, world, characters, chapter beats, and per-chapter AI writing prompts. Free and self-hosted.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f1e7",
+  "theme_color": "#16130e",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

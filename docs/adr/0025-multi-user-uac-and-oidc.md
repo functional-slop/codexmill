@@ -1,0 +1,117 @@
+# 25. Multi-user accounts, admin controls, and OIDC
+
+Date: 2026-07-14 · Status: accepted
+
+## Context
+ADR 0024 established a single local admin plus optional OIDC gated by an email allowlist. That
+supports one operator, not a shared instance. Running an instance for several people requires real
+accounts for both local and OIDC users, an admin surface to manage them, and per-user control over
+who may consume the shared, server-configured model.
+
+## Decision
+
+### User model
+A `users` table keyed on an immutable UUID `id`. Ownership references this id, never a mutable
+username or email, so a rename or email change never orphans a user's data.
+
+- `id` UUID PK, `username` unique, `email` (nullable), `password_hash` (nullable), `role` enum
+  `{root, admin, user}`, `is_active` bool, `oidc_iss` + `oidc_sub` (nullable, unique together),
+  `permissions` JSON, `created_at`, `updated_at`, `last_seen`.
+- `password_hash` is nullable to allow the blank-password root recovery path (below). Hashing is
+  argon2id (ADR 0024).
+- Roles: `root` is the first account and cannot be edited or deleted by other admins; `admin` has
+  full settings and user management; `user` generates and manages only their own bibles.
+- Every authorization check is ANDed with `is_active`.
+
+### Per-user permissions
+`permissions` JSON, derived from role at creation:
+- `use_server_engine` (bool): may use the server-configured LLM. If false, the user must supply
+  their own base_url/key.
+- `quota` (nullable): per-user generation cap (ADR 0022); null inherits the instance default.
+- Admin capabilities (`manage_users`, `manage_settings`) are implied by `role`.
+
+### Shared-AI access (no bring-your-own for non-admins yet)
+The server makes all AI calls, so a user-supplied `localhost` base URL would hit the *server's*
+localhost, not the user's machine — bring-your-own can't work on a hosted/remote instance and is
+deferred (see ROADMAP §I) until it has a remote-reachable design. So non-admins have exactly one way
+to generate: the server's AI, gated by two controls.
+- **Global** `allow_shared_ai` (store, default **true**): may non-admin users generate with the
+  server's AI? `GET/PUT /api/admin/shared-ai`. When off, only admins can generate.
+- **Per-user** `use_server_engine` (permissions): which specific users may, and only meaningful when
+  the global toggle is on. Admins are unrestricted.
+- `resolve_settings`: admins always use the server AI (per-request overrides still win for the
+  sample/testing path); a non-admin is allowed only when `allow_shared_ai` AND their `use_server_engine`
+  are both true, else 403 — there is no per-user engine fallback.
+- `/api/me` exposes `is_admin`, `can_generate`, `has_server_ai` so the app shows "AI ready" vs
+  "ask an admin". Settings is admin-only (non-admins have nothing to configure); the nav link + page
+  gate on role, and every admin API enforces it server-side.
+- Reserved: a nullable `users.llm` column exists (unused) so a future remote-capable bring-your-own
+  needs no migration.
+
+### Authentication methods
+A settings record holds `active_auth_methods`, default `["local"]`:
+- `["local"]`: local accounts only.
+- `["local", "oidc"]`: both the login form and the SSO button are active.
+- `["oidc"]`: SSO only; password login is disabled, with a local escape hatch at `/login?local=1`
+  and the `auth_reset` CLI to re-enable local if locked out.
+
+### OIDC
+Authlib owns protocol correctness (ID-token signature, JWKS, discovery, `state`, `nonce`,
+`aud`/`iss`/`exp`/`at_hash` validation, PKCE). The application layer must:
+- Register with `server_metadata_url` and `client_kwargs={"scope": "openid email profile",
+  "code_challenge_method": "S256"}` so PKCE is enabled for the confidential client.
+- Use the high-level flow (`authorize_redirect` / `authorize_access_token`) with the same `request`
+  object, backed by a signed session, so state/nonce/verifier are stored and validated.
+- Persist `id_token` at login to support RP-initiated logout via `end_session_endpoint`.
+- Key identity on the `(oidc_iss, oidc_sub)` pair, persisted on first link.
+- Honor `email_verified`; never trust or auto-link an unverified email.
+- Validate the post-login redirect target against an allowlist of relative paths.
+- Ship an integration test that tampers with `aud`/`iss`/`nonce`/expiry and asserts each is rejected.
+
+Admin-configurable OIDC settings:
+- Provider: `issuer_url` with auto-discovery, per-endpoint overrides (authorization, token, userinfo,
+  jwks, logout), `client_id`, `client_secret`, `signing_alg` (default RS256).
+- UX: `button_text`, `auto_launch`, `login_custom_message`.
+- Provisioning: `auto_register` (create a `user` on first successful login, else deny);
+  `match_existing_by` = `unset | email | username` to link an SSO identity to a pre-existing account.
+  The stored `(iss, sub)` is always matched first; `match_existing_by` is the fallback link, after
+  which the sub is persisted. Email linking requires `email_verified` and refuses to relink an email
+  already bound to a different sub.
+- Authorization: `group_claim` mapped to a role (`admin`, then `user`; `root` never downgraded); an
+  optional `advanced_perms_claim` mapped to the permission keys above; `admin_group` value. Group and
+  claim restrictions are the preferred alternative to email-domain allowlists.
+- Deployment: `redirect_subpath` for reverse-proxy subpath installs.
+
+### Bootstrap and recovery
+- First run creates the single `root` user with no default credentials (`needs_setup` flow).
+- `python -m codexmill.auth_reset`: reset the root password, null the root hash for a one-time blank
+  login, or force `active_auth_methods` to include `local`. This is the offline recovery path.
+
+### Admin panel
+Settings → Users: list all users with role, status, last seen, and usage; create a local user;
+delete; enable/disable; reset another user's password; set role; set `use_server_engine` and per-user
+`quota`. A non-root admin cannot edit or delete `root`.
+
+## Consequences
+- Larger authorization surface; a security audit follows implementation (auth bypass, per-user IDOR,
+  OIDC linking/takeover, open redirect).
+- The single-admin JSON `users` / `admin_emails` / OIDC config move to DB rows (ADR 0026); the
+  existing admin becomes `root`; `admin_emails` seed `admin`-role users.
+- `require_admin` and `current_owner` are expressed in terms of `role` + `permissions`. Owner-scoping
+  of every bible read/write is unchanged but references `users.id`.
+
+## Audit (2026-07-14) — 4 independent adversarial reviews
+Auth/authorization & session, multi-tenant IDOR, OIDC linking/takeover, and DB/migration/race/crypto.
+**Confirmed clean:** no IDOR (every bible query is owner-scoped), no SQL injection (parameterized),
+no API privilege-escalation (a `user` can't reach admin routes; no second `root` can be minted), the
+quota decrement is atomic on both engines, id-token validation + PKCE/state/nonce are correct, and no
+secret is returned or logged. **Findings fixed** (see the security fix commit): refuse OIDC
+match-linking to privileged accounts + issuer-aware guard; promote-only role sync; a null
+`password_hash` never blank-logs-in; per-user `use_server_engine` and `quota` are actually enforced;
+email normalization; idempotent legacy migration; auth-method lockout guard; Postgres migration lock.
+
+**Accepted (not fixed):** the last-root safety guards (can't remove/demote/disable the last root or
+lock out yourself) are check-then-act, so a `root` firing two concurrent demotions of *different*
+roots could in principle zero out roots. It is a self-lockout guard, not an authorization boundary
+(only a root can do it), is practically unreachable on the single-writer SQLite default, and recovers
+via the `auth_reset` CLI. Revisit with `SELECT … FOR UPDATE` if this ever runs multi-writer at scale.

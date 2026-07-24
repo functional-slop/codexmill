@@ -1,0 +1,43 @@
+# Enforcement, not documentation. A dirty or broken commit is blocked here,
+# so "clean git / no slop" survives amnesiac sessions without relying on memory.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.21
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: doc-consistency
+        name: doc-consistency (docs must agree with the code)
+        entry: uv run python scripts/check_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: pytest-smoke
+        name: pytest (drives the real CLI, offline fake backend)
+        entry: uv run pytest tests/ -q
+        language: system
+        pass_filenames: false
+        types: [python]

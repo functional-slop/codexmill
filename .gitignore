@@ -1,0 +1,26 @@
+# venv / build
+.venv/
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# secrets / local config (never commit keys)
+.env
+*.local
+
+# agent scratch — throwaway only, never committed. See docs/CONTRIBUTING.md.
+scratch/
+
+# generated story bibles (default output location)
+out/
+
+# runtime config store (if CODEXMILL_CONFIG_DIR points here); holds secrets
+data/
+
+# Private strategy/business notes — never publish
+docs/private/

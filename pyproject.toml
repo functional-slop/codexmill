@@ -1,0 +1,83 @@
+[project]
+name = "codexmill"
+version = "0.2.0"
+description = "Open-source, backend-agnostic story-bible generator: a one-line premise becomes a full novel codex (characters, structure, chapter beats) via any OpenAI-compatible LLM."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-or-later"
+authors = [{ name = "Functional Slop" }]
+keywords = ["writing", "fiction", "outline", "llm", "story-bible", "codex"]
+dependencies = [
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "click>=8.1",
+    "openai>=1.30",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "authlib>=1.3",
+    "httpx>=0.27",
+    "itsdangerous>=2.0",
+    "cryptography>=42.0",
+    "python-docx>=1.1",
+    "argon2-cffi>=23.1",  # argon2id password hashing for local accounts (ADR 0024)
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+]
+
+[project.scripts]
+codexmill = "codexmill.cli:main"
+
+[project.optional-dependencies]
+postgres = [
+    "psycopg[binary]>=3.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "mypy>=1.10",
+    "ruff==0.15.21",  # pinned to match .pre-commit-config.yaml so CI + local agree
+    "types-PyYAML",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/codexmill"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependency-injection defaults are the framework's idiom, not a B008 bug.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
+[tool.ruff.lint.per-file-ignores]
+# Alembic env + migration scripts are framework-shaped (module-level side effects, long revision ids).
+"src/codexmill/migrations/*" = ["E501", "F401"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["openai.*", "uvicorn.*", "authlib.*", "docx.*", "argon2.*", "alembic.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Alembic env + migration scripts run under the alembic runtime, not the app's type contract.
+module = ["codexmill.migrations.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:starlette.testclient"]
